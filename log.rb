@@ -20,31 +20,36 @@ rows = db.execute <<-SQL
 SQL
 
 loop do
-  http = Net::HTTP.new('ridecenter.org', port = 7016)
-  res = http.request(Net::HTTP::Get.new('/'))
-  html = Nokogiri(res.body)
-  json = html.root.child.content
-  my_hash = JSON.parse(json)
-  my_hash.each do |bus|
-    stmt = <<-SQL
-      insert or ignore into buslog (bus,lat,lon,heading,speed,received) values (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-      );
-    SQL
-    db.execute(stmt,
-      [
-        bus['busNumber'],
-        bus['latitude'],
-        bus['longitude'],
-        bus['heading'],
-        bus['speed'],
-        bus['received'],
-      ])
+  begin
+    http = Net::HTTP.new('ridecenter.org', port = 7016)
+    res = http.request(Net::HTTP::Get.new('/'))
+    html = Nokogiri(res.body)
+    json = html.root.child.content
+    my_hash = JSON.parse(json)
+    my_hash.each do |bus|
+      stmt = <<-SQL
+        insert or ignore into buslog (bus,lat,lon,heading,speed,received) values (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?
+        );
+      SQL
+      db.execute(stmt,
+        [
+          bus['busNumber'],
+          bus['latitude'],
+          bus['longitude'],
+          bus['heading'],
+          bus['speed'],
+          bus['received'],
+        ])
+    end
+    sleep 30
+  rescue Errno::ECONNREFUSED => ex
+    # swallow exception if there's a network error
+    puts "#{Time.now}: #{ex}"
   end
-  sleep 30
 end
