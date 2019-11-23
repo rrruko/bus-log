@@ -51,5 +51,6 @@ loop do
   rescue Errno::ECONNREFUSED => ex
     # swallow exception if there's a network error
     puts "#{Time.now}: #{ex}"
+    sleep 5
   end
 end
